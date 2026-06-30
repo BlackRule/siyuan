@@ -20,6 +20,120 @@ import {getFieldIdByCellElement} from "./row";
 import {getFieldsByData} from "./view";
 import {getCompressURL, removeCompressURL} from "../../../util/image";
 import {callMobileAppShowKeyboard} from "../../../mobile/util/mobileAppUtil";
+import {getSavePath} from "../../../util/newFile";
+
+interface IAVBlockHint {
+    splitChar: string;
+    key: string;
+    lastIndex: number;
+    caretIndex: number;
+}
+
+interface IAVTextInputState {
+    value: string;
+    caretIndex: number;
+}
+
+const isDatabaseTextBlockRefEnabled = () => window.siyuan.config.editor.databaseTextBlockRef !== false;
+
+const getBlockHintByInput = (inputElement: HTMLInputElement | HTMLTextAreaElement): IAVBlockHint | undefined => {
+    const caretIndex = inputElement.selectionStart ?? inputElement.value.length;
+    const currentLineValue = inputElement.value.substring(0, caretIndex);
+    let lastIndex = -1;
+    let splitChar = "";
+    Constants.BLOCK_HINT_KEYS.forEach((item) => {
+        let currentLastIndex = currentLineValue.lastIndexOf(item);
+        const closeKey = Constants.BLOCK_HINT_CLOSE_KEYS[item];
+        while (currentLastIndex > -1) {
+            if (currentLineValue.substring(currentLastIndex - 1, currentLastIndex - 1 + item.length + 1) === item + item.substring(0, 1)) {
+                currentLastIndex--;
+            }
+            if (!closeKey || currentLineValue.substring(currentLastIndex + item.length).indexOf(closeKey) === -1) {
+                break;
+            }
+            currentLastIndex = currentLastIndex > 0 ? currentLineValue.lastIndexOf(item, currentLastIndex - 1) : -1;
+        }
+        if (lastIndex < currentLastIndex) {
+            splitChar = item;
+            lastIndex = currentLastIndex;
+        }
+    });
+    if (lastIndex === -1) {
+        return undefined;
+    }
+    const key = currentLineValue.substring(lastIndex + splitChar.length);
+    if (key.trimStart() === key && key.length < Constants.SIZE_TITLE) {
+        return {splitChar, key, lastIndex, caretIndex};
+    }
+    return undefined;
+};
+
+const getBlockRefMarkdown = (value: string, protyle: IProtyle, callback: (text: string) => void) => {
+    if (!value) {
+        callback("");
+        return;
+    }
+    if (value.startsWith("((newFile ") && value.endsWith(`${Lute.Caret}'))`)) {
+        const fileNames = value.substring(11, value.length - 4).split(`"${Constants.ZWSP}'`);
+        const realFileName = fileNames.length === 1 ? fileNames[0] : fileNames[1];
+        getSavePath(protyle.path, protyle.notebookId, (pathString, targetNotebookId) => {
+            fetchPost("/api/filetree/createDocWithMd", {
+                notebook: targetNotebookId,
+                path: pathPosix().join(pathString, realFileName),
+                parentID: protyle.notebookId === targetNotebookId ? protyle.block.rootID : "",
+                markdown: "",
+            }, (response) => {
+                callback(`((${response.data}))`);
+            });
+        });
+        return;
+    }
+    const tempElement = document.createElement("div");
+    tempElement.innerHTML = value.replace(/<mark>/g, "").replace(/<\/mark>/g, "");
+    const refElement = tempElement.firstElementChild as HTMLElement;
+    const id = refElement?.getAttribute("data-id");
+    if (!id) {
+        callback("");
+        return;
+    }
+    callback(`((${id}))`);
+};
+
+const renderTextCellContent = (content = "") => {
+    if (!isDatabaseTextBlockRefEnabled()) {
+        return Lute.EscapeHTMLStr(content);
+    }
+    let html = "";
+    let lastIndex = 0;
+    const blockRefReg = /\(\(([0-9]{14}-[a-z0-9]{7})(?:\s+(["'])(.*?)\2)?\)\)/g;
+    let match: RegExpExecArray;
+    while ((match = blockRefReg.exec(content))) {
+        html += Lute.EscapeHTMLStr(content.substring(lastIndex, match.index));
+        const id = match[1];
+        const isStatic = match[2] === "\"";
+        const refText = match[3] || id;
+        html += `<span data-type="block-ref" data-id="${id}" data-subtype="${isStatic ? "s" : "d"}" class="av__celltext--ref">${Lute.EscapeHTMLStr(refText.replace(new RegExp(Constants.ZWSP, "g"), ""))}</span>`;
+        lastIndex = match.index + match[0].length;
+    }
+    html += Lute.EscapeHTMLStr(content.substring(lastIndex));
+    return html;
+};
+
+export const updateTextCellDynamicRefs = (element: Element) => {
+    if (!isDatabaseTextBlockRefEnabled()) {
+        return;
+    }
+    const refElements: Element[] = [];
+    if (element.matches?.('[data-type~="block-ref"][data-subtype="d"]')) {
+        refElements.push(element);
+    }
+    element.querySelectorAll('[data-type~="block-ref"][data-subtype="d"]').forEach(item => refElements.push(item));
+    refElements.forEach(item => {
+        fetchPost("/api/block/getRefText", {id: item.getAttribute("data-id")}, (response) => {
+            item.textContent = (response.data || item.textContent).replace(new RegExp(Constants.ZWSP, "g"), "");
+        });
+    });
+};
 
 const renderCellURL = (urlContent: string) => {
     let host = urlContent;
@@ -53,6 +167,8 @@ export const getCellText = (cellElement: HTMLElement | false) => {
                 cellText += `${item.firstChild.textContent} → ${item.lastChild.textContent}, `;
             } else if (item.getAttribute("data-type") === "url") {
                 cellText = item.getAttribute("data-href") + ", ";
+            } else if (item.classList.contains("av__celltext--ref") && item.parentElement?.classList.contains("av__celltext")) {
+                return;
             } else if (item.getAttribute("data-type") !== "block-more") {
                 cellText += item.textContent + ", ";
             }
@@ -78,7 +194,7 @@ export const genCellValueByElement = (colType: TAVCol, cellElement: HTMLElement)
     } else if (["text", "block", "url", "phone", "email", "template"].includes(colType)) {
         const textElement = cellElement.querySelector(".av__celltext") as HTMLElement;
         cellValue[colType as "text"] = {
-            content: colType === "url" ? textElement.dataset.href : textElement.textContent
+            content: colType === "url" ? textElement.dataset.href : (colType === "text" ? (textElement.dataset.content || textElement.textContent) : textElement.textContent)
         };
         if (colType === "block" && textElement.dataset.id) {
             cellValue.block.id = textElement.dataset.id;
@@ -483,7 +599,7 @@ export const getTypeByCellElement = (cellElement: Element) => {
     return scrollElement.querySelector(".av__row--header").querySelector(`[data-col-id="${cellElement.getAttribute("data-col-id")}"]`).getAttribute("data-dtype") as TAVCol;
 };
 
-export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type?: TAVCol) => {
+export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type?: TAVCol, inputState?: IAVTextInputState) => {
     if (cellElements.length === 0 || (cellElements.length === 1 && !cellElements[0])) {
         return;
     }
@@ -563,9 +679,14 @@ export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type
     const inputElement = avMaskElement.querySelector(".b3-text-field") as HTMLInputElement;
     if (inputElement) {
         if (["text", "email", "phone", "block", "template"].includes(type)) {
-            inputElement.value = cellElements[0].querySelector(".av__celltext")?.textContent || "";
+            const textElement = cellElements[0].querySelector(".av__celltext") as HTMLElement;
+            inputElement.value = inputState?.value ?? (type === "text" ? (textElement?.dataset.content || textElement?.textContent || "") : textElement?.textContent || "");
         }
-        inputElement.select();
+        if (inputState) {
+            inputElement.setSelectionRange(inputState.caretIndex, inputState.caretIndex);
+        } else {
+            inputElement.select();
+        }
         inputElement.focus();
         callMobileAppShowKeyboard();
         if (type === "template") {
@@ -582,9 +703,10 @@ export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type
                 });
             });
         }
-        if (type === "block") {
+        if (type === "block" || (type === "text" && isDatabaseTextBlockRefEnabled())) {
             inputElement.addEventListener("input", (event: InputEvent) => {
-                if (Constants.BLOCK_HINT_KEYS.includes(inputElement.value.substring(0, 2))) {
+                const blockHint = getBlockHintByInput(inputElement);
+                if (blockHint) {
                     protyle.toolbar.range = document.createRange();
                     if (cellElements[0] && !blockElement.contains(cellElements[0])) {
                         const rowID = getFieldIdByCellElement(cellElements[0], viewType);
@@ -600,11 +722,29 @@ export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type
                         cellElements[0].classList.add("av__cell--select");
                         addDragFill(cellElements[0]);
                     }
-                    let textPlain = inputElement.value;
-                    if (isDynamicRef(textPlain)) {
-                        textPlain = textPlain.substring(2, 22 + 2);
-                    } else {
-                        textPlain = textPlain.substring(2);
+                    protyle.hint.splitChar = blockHint.splitChar;
+                    protyle.hint.lastIndex = blockHint.lastIndex;
+                    protyle.hint.fillAVPlainText = undefined;
+                    let textPlain = blockHint.key;
+                    const hintText = inputElement.value.substring(blockHint.lastIndex, blockHint.caretIndex);
+                    if (isDynamicRef(hintText)) {
+                        textPlain = hintText.substring(2, 22 + 2);
+                    }
+                    if (type === "text") {
+                        const inputValue = inputElement.value;
+                        protyle.hint.fillAVPlainText = (value, hintProtyle) => {
+                            getBlockRefMarkdown(value, hintProtyle, (blockRefMarkdown) => {
+                                if (!blockRefMarkdown) {
+                                    focusBlock(blockElement);
+                                    return;
+                                }
+                                const cellValue = inputValue.substring(0, blockHint.lastIndex) + blockRefMarkdown + inputValue.substring(blockHint.caretIndex);
+                                popTextCell(hintProtyle, cellElements, "text", {
+                                    value: cellValue,
+                                    caretIndex: blockHint.lastIndex + blockRefMarkdown.length,
+                                });
+                            });
+                        };
                     }
                     hintRef(textPlain, protyle, "av");
                     avMaskElement?.remove();
@@ -959,7 +1099,8 @@ export const renderCell = (cellValue: IAVCellValue, rowIndex = 0, showIcon = tru
     if ("template" === cellValue.type) {
         text = `<span class="av__celltext">${cellValue ? (cellValue.template.content || "") : ""}</span>`;
     } else if ("text" === cellValue.type) {
-        text = `<span class="av__celltext">${cellValue ? Lute.EscapeHTMLStr(cellValue.text.content || "") : ""}</span>`;
+        const content = cellValue?.text?.content || "";
+        text = `<span class="av__celltext" data-content="${escapeAttr(content)}">${renderTextCellContent(content)}</span>`;
     } else if (["email", "phone"].includes(cellValue.type)) {
         text = `<span class="av__celltext av__celltext--url" data-type="${cellValue.type}">${cellValue ? Lute.EscapeHTMLStr(cellValue[cellValue.type as "email"].content || "") : ""}</span>`;
     } else if ("url" === cellValue.type) {
@@ -1197,6 +1338,7 @@ export const dragFillCellsValue = (protyle: IProtyle, nodeElement: HTMLElement, 
             });
             item.element.innerHTML = renderCell(data, 0, showIcon);
             renderCellAttr(item.element, data);
+            updateTextCellDynamicRefs(item.element);
             delete item.colId;
             delete item.element;
             undoOperations.push({

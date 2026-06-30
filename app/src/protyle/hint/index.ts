@@ -51,6 +51,7 @@ export class Hint {
     public enableExtend = false;
     public splitChar = "";
     public lastIndex = -1;
+    public fillAVPlainText?: (value: string, protyle: IProtyle) => void;
     private source: THintSource;
 
     constructor(protyle: IProtyle) {
@@ -331,6 +332,7 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
                     this.fill(decodeURIComponent(this.element.querySelector(".b3-list-item--focus").getAttribute("data-value")), protyle, false, isNotCtrl(event));
                     event.preventDefault();
                 } else if (event.key === "Escape") {
+                    this.fillAVPlainText = undefined;
                     this.element.classList.add("fn__none");
                     focusByRange(protyle.toolbar.range);
                 }
@@ -358,6 +360,7 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
             beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),
             rootID: source === "av" ? "" : protyle.block.rootID,
             isDatabase: source === "av",
+            isSquareBrackets: ["[[", "【【"].includes(protyle.hint.splitChar),
         }, (response) => {
             let searchHTML = "";
             if (response.data.newDoc) {
@@ -450,6 +453,12 @@ ${genHintItemHTML(item)}
             return;
         }
         if (this.source === "av") {
+            if (this.fillAVPlainText) {
+                const fillAVPlainText = this.fillAVPlainText;
+                this.fillAVPlainText = undefined;
+                fillAVPlainText(value, protyle);
+                return;
+            }
             let cellElement = hasClosestByClassName(protyle.toolbar.range.startContainer, "av__cell");
             if (!cellElement) {
                 cellElement = nodeElement.querySelector(".av__cell--select") as HTMLElement;

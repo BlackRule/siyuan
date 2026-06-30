@@ -492,6 +492,10 @@ declare namespace Config {
          */
         onlySearchForDoc: boolean;
         /**
+         * Whether to enable block references in database text cells
+         */
+        databaseTextBlockRef: boolean;
+        /**
          * PlantUML rendering service address
          */
         plantUMLServePath: string;

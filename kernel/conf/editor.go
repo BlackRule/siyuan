@@ -52,6 +52,7 @@ type Editor struct {
 	Spellcheck                      bool           `json:"spellcheck"`                      // 是否启用拼写检查
 	SpellcheckLanguages             []string       `json:"spellcheckLanguages"`             // 拼写检查语言
 	OnlySearchForDoc                bool           `json:"onlySearchForDoc"`                // 是否启用 [[ 仅搜索文档块
+	DatabaseTextBlockRef            *bool          `json:"databaseTextBlockRef"`            // 是否在数据库文本单元格中启用块引用
 	BacklinkExpandCount             int            `json:"backlinkExpandCount"`             // 反向链接默认展开数量
 	BackmentionExpandCount          int            `json:"backmentionExpandCount"`          // 反链提及默认展开数量
 	BacklinkContainChildren         bool           `json:"backlinkContainChildren"`         // 反向链接是否包含子块进行计算
@@ -95,6 +96,7 @@ func NewEditor() *Editor {
 		RTL:                             false,
 		Spellcheck:                      false,
 		SpellcheckLanguages:             []string{"en-US"},
+		DatabaseTextBlockRef:            func() *bool { v := true; return &v }(),
 		BacklinkExpandCount:             8,
 		BackmentionExpandCount:          -1,
 		BacklinkContainChildren:         true,

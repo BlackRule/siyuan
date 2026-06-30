@@ -3,7 +3,7 @@ import {Constants} from "../../../../constants";
 import {fetchSyncPost} from "../../../../util/fetch";
 import {escapeAttr} from "../../../../util/escape";
 import {unicode2Emoji} from "../../../../emoji";
-import {cellValueIsEmpty, renderCell} from "../cell";
+import {cellValueIsEmpty, renderCell, updateTextCellDynamicRefs} from "../cell";
 import {focusBlock} from "../../../util/selection";
 import {electronUndo} from "../../../undo";
 import {addClearButton} from "../../../../util/addClearButton";
@@ -164,6 +164,7 @@ export const afterRenderGallery = (options: ITableOptions) => {
         options.blockElement.removeAttribute("data-need-focus");
     }
     options.blockElement.setAttribute("data-render", "true");
+    updateTextCellDynamicRefs(options.blockElement);
     if (options.resetData.alignSelf) {
         options.blockElement.style.alignSelf = options.resetData.alignSelf;
     }

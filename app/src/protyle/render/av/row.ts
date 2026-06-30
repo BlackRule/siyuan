@@ -2,7 +2,14 @@ import {hasClosestBlock, hasClosestByClassName} from "../../util/hasClosest";
 import {focusBlock} from "../../util/selection";
 import {Menu} from "../../../plugin/Menu";
 import {transaction} from "../../wysiwyg/transaction";
-import {genCellValue, genCellValueByElement, getTypeByCellElement, renderCell, renderCellAttr} from "./cell";
+import {
+    genCellValue,
+    genCellValueByElement,
+    getTypeByCellElement,
+    renderCell,
+    renderCellAttr,
+    updateTextCellDynamicRefs
+} from "./cell";
 import {fetchPost} from "../../../util/fetch";
 import * as dayjs from "dayjs";
 import {Constants} from "../../../constants";
@@ -179,6 +186,7 @@ ${colType === "block" ? ' data-detached="true"' : ""}>${renderCell(genCellValue(
                         const cellValue = response.data.values[cellItem.dataset.colId];
                         cellItem.innerHTML = renderCell(cellValue);
                         renderCellAttr(cellItem, cellValue);
+                        updateTextCellDynamicRefs(cellItem);
                     }
                 });
             });

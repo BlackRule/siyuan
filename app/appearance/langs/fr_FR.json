@@ -465,6 +465,8 @@
   "switchDirect": "Changer le sens de comparaison",
   "onlySearchForDoc": "<code class='fn__code'>[[</code> rechercher uniquement les documents",
   "onlySearchForDocTip": "Après l'activation, [[ ou 【【 pour rechercher des références de bloc uniquement dans les noms de documents",
+  "databaseTextBlockRef": "Database text block refs",
+  "databaseTextBlockRefTip": "When enabled, database text cells can insert and render block references",
   "pasteURLAutoConvert": "Convertir automatiquement les URL collées en liens",
   "pasteURLAutoConvertTip": "Lorsque cette option est activée, coller une URL commençant par http:// ou https:// la convertit automatiquement en lien cliquable",
   "ocrResult": "Texte du résultat OCR",

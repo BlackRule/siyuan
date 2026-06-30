@@ -1,7 +1,7 @@
 import {fetchSyncPost} from "../../../util/fetch";
 import {getColIconByType} from "./col";
 import {Constants} from "../../../constants";
-import {addDragFill, cellScrollIntoView, popTextCell, renderCell} from "./cell";
+import {addDragFill, cellScrollIntoView, popTextCell, renderCell, updateTextCellDynamicRefs} from "./cell";
 import {unicode2Emoji} from "../../../emoji";
 import {focusBlock} from "../../util/selection";
 import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../../util/hasClosest";
@@ -291,6 +291,7 @@ const afterRenderTable = (options: ITableOptions) => {
         options.blockElement.removeAttribute("data-need-focus");
     }
     options.blockElement.setAttribute("data-render", "true");
+    updateTextCellDynamicRefs(options.blockElement);
     options.blockElement.querySelector(".av__scroll").scrollLeft = options.resetData.left;
     options.blockElement.style.alignSelf = options.resetData.alignSelf;
     const editRect = options.protyle.contentElement.getBoundingClientRect();

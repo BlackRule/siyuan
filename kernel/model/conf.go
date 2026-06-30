@@ -253,6 +253,9 @@ func InitConf() {
 	if nil == Conf.Editor {
 		Conf.Editor = defaultEditor
 	}
+	if nil == Conf.Editor.DatabaseTextBlockRef {
+		Conf.Editor.DatabaseTextBlockRef = defaultEditor.DatabaseTextBlockRef
+	}
 
 	// 新增字段的默认值，使用指针类型来区分字段不存在（nil）和用户设置为 0（非 nil）
 	if nil == Conf.Editor.BacklinkSort {

@@ -322,6 +322,10 @@ func setEditor(c *gin.Context) {
 	} else {
 		*editor.FloatWindowDelay = max(0, min(2000, *editor.FloatWindowDelay))
 	}
+	if nil == editor.DatabaseTextBlockRef {
+		v := true
+		editor.DatabaseTextBlockRef = &v
+	}
 
 	oldVirtualBlockRef := model.Conf.Editor.VirtualBlockRef
 	oldVirtualBlockRefInclude := model.Conf.Editor.VirtualBlockRefInclude

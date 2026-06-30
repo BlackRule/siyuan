@@ -1,4 +1,4 @@
-import {genCellValue, getTypeByCellElement, renderCell, renderCellAttr} from "../cell";
+import {genCellValue, getTypeByCellElement, renderCell, renderCellAttr, updateTextCellDynamicRefs} from "../cell";
 import {fetchPost} from "../../../../util/fetch";
 import {setPage} from "../row";
 import {Constants} from "../../../../constants";
@@ -90,6 +90,7 @@ ${fieldType === "block" ? ' data-detached="true"' : ""}>${renderCell(genCellValu
                         }
                         cellItem.innerHTML = renderCell(cellValue, undefined, false, type);
                         renderCellAttr(cellItem, cellValue);
+                        updateTextCellDynamicRefs(cellItem);
                     }
                 });
             });

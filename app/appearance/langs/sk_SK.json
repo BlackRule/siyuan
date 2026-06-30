@@ -465,6 +465,8 @@
   "switchDirect": "Prepnúť smer porovnávania",
   "onlySearchForDoc": "[[ hľadá iba v dokumentoch",
   "onlySearchForDocTip": "Ak je povolené, hľadanie cez [[ sa obmedzí len na názvy dokumentov",
+  "databaseTextBlockRef": "Database text block refs",
+  "databaseTextBlockRefTip": "When enabled, database text cells can insert and render block references",
   "pasteURLAutoConvert": "Automaticky previesť vloženú URL na odkaz",
   "pasteURLAutoConvertTip": "Ak je povolené, vloženie URL začínajúcej na http:// alebo https:// ju automaticky prevedie na klikateľný odkaz",
   "ocrResult": "Text výsledku OCR",

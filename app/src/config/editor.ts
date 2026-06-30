@@ -127,6 +127,14 @@ export const editor = {
 </label>
 <label class="fn__flex b3-label">
     <div class="fn__flex-1">
+        ${window.siyuan.languages.databaseTextBlockRef}
+        <div class="b3-label__text">${window.siyuan.languages.databaseTextBlockRefTip}</div>
+    </div>
+    <span class="fn__space"></span>
+    <input class="b3-switch fn__flex-center" id="databaseTextBlockRef" type="checkbox"${window.siyuan.config.editor.databaseTextBlockRef !== false ? " checked" : ""}/>
+</label>
+<label class="fn__flex b3-label">
+    <div class="fn__flex-1">
         ${window.siyuan.languages.pasteURLAutoConvert}
         <div class="b3-label__text">${window.siyuan.languages.pasteURLAutoConvertTip}</div>
     </div>
@@ -532,6 +540,7 @@ export const editor = {
                 spellcheckLanguages: window.siyuan.config.editor.spellcheckLanguages,
                 /// #endif
                 onlySearchForDoc: (editor.element.querySelector("#onlySearchForDoc") as HTMLInputElement).checked,
+                databaseTextBlockRef: (editor.element.querySelector("#databaseTextBlockRef") as HTMLInputElement).checked,
                 pasteURLAutoConvert: (editor.element.querySelector("#pasteURLAutoConvert") as HTMLInputElement).checked,
                 floatWindowMode,
                 floatWindowDelay,

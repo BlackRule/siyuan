@@ -12,6 +12,7 @@ import {
     popTextCell,
     renderCell,
     renderCellAttr,
+    updateTextCellDynamicRefs,
     updateCellsValue,
     updateHeaderCell
 } from "./cell";
@@ -115,6 +116,9 @@ export const avClick = (protyle: IProtyle, event: MouseEvent & { target: HTMLEle
                 target.parentElement.classList.add("av__cell--select");
                 addDragFill(target.parentElement);
             }
+            protyle.hint.fillAVPlainText = undefined;
+            protyle.hint.splitChar = "";
+            protyle.hint.lastIndex = -1;
             hintRef(target.previousElementSibling.textContent.trim(), protyle, "av");
             event.preventDefault();
             event.stopPropagation();
@@ -866,6 +870,7 @@ export const updateAttrViewCellAnimation = (cellElement: HTMLElement, value: IAV
             addDragFill(cellElement);
         }
         renderCellAttr(cellElement, value);
+        updateTextCellDynamicRefs(cellElement);
     }
 };
 
